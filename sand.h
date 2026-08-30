@@ -15,13 +15,13 @@
 // ---------------------------------------------------------------------------
 
 #ifdef _WIN32
-#  ifdef SAND_EXPORTS
-#    define SAND_API __declspec(dllexport)
-#  else
-#    define SAND_API __declspec(dllimport)
-#  endif
+#ifdef SAND_EXPORTS
+#define SAND_API __declspec(dllexport)
 #else
-#  define SAND_API
+#define SAND_API __declspec(dllimport)
+#endif
+#else
+#define SAND_API
 #endif
 
 #ifdef __cplusplus
