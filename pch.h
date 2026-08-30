@@ -9,5 +9,11 @@
 
 // 添加要在此处预编译的标头
 #include "framework.h"
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <new>
+#include <utility>
+#include <vector>
 
 #endif //PCH_H

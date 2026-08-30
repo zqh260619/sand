@@ -1,0 +1,18 @@
+LIBRARY "sand"
+
+EXPORTS
+    sand_create
+    sand_destroy
+    sand_reset
+    sand_size
+    sand_get_height
+    sand_set_height
+    sand_is_stable
+    sand_relax
+    sand_relax_grid
+    sand_update
+    sand_update_grid
+    sand_drop_grain
+    sand_update_height
+    update_sand_height
+    update_height
