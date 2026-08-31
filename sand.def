@@ -5,6 +5,8 @@ EXPORTS
     sand_destroy
     sand_reset
     sand_size
+    sand_theta
+    sand_set_theta
     sand_get_height
     sand_set_height
     sand_is_stable
