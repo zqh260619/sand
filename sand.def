@@ -4,7 +4,8 @@ EXPORTS
     sand_create
     sand_destroy
     sand_reset
-    sand_size
+    sand_width
+    sand_height
     sand_theta
     sand_set_theta
     sand_get_height

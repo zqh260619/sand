@@ -6,7 +6,7 @@
 // sand.h - 沙堆元胞自动机 DLL 的公共 C API
 //
 // 规则见项目 README.md：
-//   * L x L 正方形网格，开放边界（越界高度固定为 0）
+//   * W x H 矩形网格，开放边界（越界高度固定为 0）
 //   * theta 由调用方作为参数输入
 //   * 完全同步松弛：每一轮中所有不稳定格基于同一份旧快照制定倒塌计划
 //   * 无 q 的水填充倒塌计划：向所有并列最低方向平均搬运，直到
@@ -37,8 +37,9 @@ extern "C" {
 /*
  * 错误码 / 返回值约定
  *
- * sand_create          : 失败返回 NULL；size <= 0 或 theta < 0 时失败
- * sand_size            : 失败返回 -1
+ * sand_create          : 失败返回 NULL；width <= 0、height <= 0 或 theta < 0 时失败
+ * sand_width           : 失败返回 -1
+ * sand_height          : 失败返回 -1
  * sand_theta           : 失败返回 -1
  * sand_set_theta       : 成功返回 0，参数错误返回 -1
  * sand_get_height      : 失败返回 -1（合法高度均 >= 0）
@@ -59,8 +60,8 @@ extern "C" {
 #define SAND_ERR_INVALID_ARGUMENT (-1)
 #define SAND_ERR_NOT_STABLE       (-2)
 
-/* 创建 L x L 的全零沙堆。L 必须为正整数，theta 必须非负。 */
-SAND_API sand_pile* sand_create(int size, int theta);
+/* 创建 W x H 的全零沙堆。W、H 必须为正整数，theta 必须非负。 */
+SAND_API sand_pile* sand_create(int width, int height, int theta);
 
 /* 销毁沙堆。 */
 SAND_API void sand_destroy(sand_pile* sand);
@@ -68,8 +69,11 @@ SAND_API void sand_destroy(sand_pile* sand);
 /* 将整个网格清零。成功返回 0。 */
 SAND_API int sand_reset(sand_pile* sand);
 
-/* 返回网格边长 L；失败返回 -1。 */
-SAND_API int sand_size(const sand_pile* sand);
+/* 返回网格宽度 W；失败返回 -1。 */
+SAND_API int sand_width(const sand_pile* sand);
+
+/* 返回网格高度 H；失败返回 -1。 */
+SAND_API int sand_height(const sand_pile* sand);
 
 /* 返回当前临界高差 theta；失败返回 -1。 */
 SAND_API int sand_theta(const sand_pile* sand);
@@ -93,10 +97,10 @@ SAND_API int sand_is_stable(const sand_pile* sand);
 SAND_API long long sand_relax(sand_pile* sand);
 
 /*
- * 直接对长度为 size*size 的扁平一维高度数组（行优先）执行完全同步松弛。
+ * 直接对长度为 width*height 的扁平一维高度数组（行优先）执行完全同步松弛。
  * 返回本次松弛移动的沙粒总数；参数错误返回 -1。
  */
-SAND_API long long sand_relax_grid(int* heights, int size, int theta);
+SAND_API long long sand_relax_grid(int* heights, int width, int height, int theta);
 
 /*
  * 在 (row, col) 处落一粒沙，并执行完全同步松弛。
@@ -106,12 +110,13 @@ SAND_API long long sand_relax_grid(int* heights, int size, int theta);
 SAND_API long long sand_update(sand_pile* sand, int row, int col);
 
 /*
- * 直接操作长度为 size*size 的扁平一维高度数组（行优先）。
+ * 直接操作长度为 width*height 的扁平一维高度数组（行优先）。
  * 在 (row, col) 处落一粒沙并完全松弛；要求调用时系统稳定。
  * 成功返回本次落沙触发的雪崩大小。
  */
 SAND_API long long sand_update_grid(int* heights,
-                                    int size,
+                                    int width,
+                                    int height,
                                     int theta,
                                     int row,
                                     int col);
@@ -120,12 +125,14 @@ SAND_API long long sand_update_grid(int* heights,
 SAND_API long long sand_drop_grain(sand_pile* sand, int row, int col);
 SAND_API long long sand_update_height(sand_pile* sand, int row, int col);
 SAND_API long long update_sand_height(int* heights,
-                                      int size,
+                                      int width,
+                                      int height,
                                       int theta,
                                       int row,
                                       int col);
 SAND_API long long update_height(int* heights,
-                                 int size,
+                                 int width,
+                                 int height,
                                  int theta,
                                  int row,
                                  int col);

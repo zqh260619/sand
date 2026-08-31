@@ -14,9 +14,9 @@ namespace
 
     constexpr int kDirectionCount = 4;
 
-    bool in_bounds(int size, int row, int col)
+    bool in_bounds(int width, int height, int row, int col)
     {
-        return row >= 0 && row < size && col >= 0 && col < size;
+        return row >= 0 && row < height && col >= 0 && col < width;
     }
 }  // namespace
 
@@ -27,9 +27,10 @@ namespace
 class sand_pile
 {
 public:
-    sand_pile(int size, int theta);
+    sand_pile(int width, int height, int theta);
 
-    int size() const;
+    int width() const;
+    int height() const;
     int theta() const;
     bool set_theta(int theta);
     void reset();
@@ -50,19 +51,25 @@ private:
     bool unstable_at(int row, int col) const;
     std::array<long long, kDirectionCount> collapse_plan(int row, int col) const;
 
-    int size_;
+    int width_;
+    int height_;
     int theta_;
     std::vector<int> heights_;
 };
 
-sand_pile::sand_pile(int size, int theta): 
-    size_(size), theta_(theta), heights_(static_cast<std::size_t>(size) * size, 0)
+sand_pile::sand_pile(int width, int height, int theta):
+    width_(width), height_(height), theta_(theta), heights_(static_cast<std::size_t>(width) * height, 0)
 {
 }
 
-int sand_pile::size() const
+int sand_pile::width() const
 {
-    return size_;
+    return width_;
+}
+
+int sand_pile::height() const
+{
+    return height_;
 }
 
 int sand_pile::theta() const
@@ -88,12 +95,12 @@ void sand_pile::reset()
 
 bool sand_pile::in_bounds(int row, int col) const
 {
-    return row >= 0 && row < size_ && col >= 0 && col < size_;
+    return row >= 0 && row < height_ && col >= 0 && col < width_;
 }
 
 std::size_t sand_pile::cell_index(int row, int col) const
 {
-    return static_cast<std::size_t>(row) * static_cast<std::size_t>(size_) +
+    return static_cast<std::size_t>(row) * static_cast<std::size_t>(width_) +
            static_cast<std::size_t>(col);
 }
 
@@ -142,10 +149,10 @@ bool sand_pile::unstable_at(int row, int col) const
     const std::size_t idx = cell_index(row, col);
     const int value = h[idx];
 
-    const int up = row > 0 ? h[idx - static_cast<std::size_t>(size_)] : 0;
-    const int down = row + 1 < size_ ? h[idx + static_cast<std::size_t>(size_)] : 0;
+    const int up = row > 0 ? h[idx - static_cast<std::size_t>(width_)] : 0;
+    const int down = row + 1 < height_ ? h[idx + static_cast<std::size_t>(width_)] : 0;
     const int left = col > 0 ? h[idx - 1] : 0;
-    const int right = col + 1 < size_ ? h[idx + 1] : 0;
+    const int right = col + 1 < width_ ? h[idx + 1] : 0;
 
     return value - up > theta_ || value - down > theta_ ||
            value - left > theta_ || value - right > theta_;
@@ -153,9 +160,9 @@ bool sand_pile::unstable_at(int row, int col) const
 
 bool sand_pile::is_stable() const
 {
-    for (int row = 0; row < size_; ++row)
+    for (int row = 0; row < height_; ++row)
     {
-        for (int col = 0; col < size_; ++col)
+        for (int col = 0; col < width_; ++col)
         {
             if (unstable_at(row, col))
             {
@@ -182,17 +189,17 @@ std::array<long long, kDirectionCount> sand_pile::collapse_plan(int row, int col
 
     if (row > 0)
     {
-        levels[kUp] = h[idx - static_cast<std::size_t>(size_)];
+        levels[kUp] = h[idx - static_cast<std::size_t>(width_)];
         inside[kUp] = true;
     }
-    if (col + 1 < size_)
+    if (col + 1 < width_)
     {
         levels[kRight] = h[idx + 1];
         inside[kRight] = true;
     }
-    if (row + 1 < size_)
+    if (row + 1 < height_)
     {
-        levels[kDown] = h[idx + static_cast<std::size_t>(size_)];
+        levels[kDown] = h[idx + static_cast<std::size_t>(width_)];
         inside[kDown] = true;
     }
     if (col > 0)
@@ -270,9 +277,9 @@ long long sand_pile::relax()
     while (true)
     {
         unstable_cells.clear();
-        for (int row = 0; row < size_; ++row)
+        for (int row = 0; row < height_; ++row)
         {
-            for (int col = 0; col < size_; ++col)
+            for (int col = 0; col < width_; ++col)
             {
                 if (unstable_at(row, col))
                 {
@@ -291,8 +298,8 @@ long long sand_pile::relax()
         // 所有计划都基于本轮开始时的同一份旧快照 heights_。
         for (const std::size_t idx : unstable_cells)
         {
-            const int row = static_cast<int>(idx / static_cast<std::size_t>(size_));
-            const int col = static_cast<int>(idx % static_cast<std::size_t>(size_));
+            const int row = static_cast<int>(idx / static_cast<std::size_t>(width_));
+            const int col = static_cast<int>(idx % static_cast<std::size_t>(width_));
             const auto alloc = collapse_plan(row, col);
 
             long long sent = 0;
@@ -306,15 +313,15 @@ long long sand_pile::relax()
 
             if (row > 0)
             {
-                delta[idx - static_cast<std::size_t>(size_)] += alloc[kUp];
+                delta[idx - static_cast<std::size_t>(width_)] += alloc[kUp];
             }
-            if (col + 1 < size_)
+            if (col + 1 < width_)
             {
                 delta[idx + 1] += alloc[kRight];
             }
-            if (row + 1 < size_)
+            if (row + 1 < height_)
             {
-                delta[idx + static_cast<std::size_t>(size_)] += alloc[kDown];
+                delta[idx + static_cast<std::size_t>(width_)] += alloc[kDown];
             }
             if (col > 0)
             {
@@ -349,16 +356,16 @@ long long sand_pile::update(int row, int col)
     return relax();
 }
 
-extern "C" SAND_API sand_pile* sand_create(int size, int theta)
+extern "C" SAND_API sand_pile* sand_create(int width, int height, int theta)
 {
-    if (size <= 0 || theta < 0)
+    if (width <= 0 || height <= 0 || theta < 0)
     {
         return nullptr;
     }
 
     try
     {
-        return new sand_pile(size, theta);
+        return new sand_pile(width, height, theta);
     }
     catch (const std::bad_alloc&)
     {
@@ -386,14 +393,24 @@ extern "C" SAND_API int sand_reset(sand_pile* sand)
     return 0;
 }
 
-extern "C" SAND_API int sand_size(const sand_pile* sand)
+extern "C" SAND_API int sand_width(const sand_pile* sand)
 {
     if (sand == nullptr)
     {
         return SAND_ERR_INVALID_ARGUMENT;
     }
 
-    return sand->size();
+    return sand->width();
+}
+
+extern "C" SAND_API int sand_height(const sand_pile* sand)
+{
+    if (sand == nullptr)
+    {
+        return SAND_ERR_INVALID_ARGUMENT;
+    }
+
+    return sand->height();
 }
 
 extern "C" SAND_API int sand_theta(const sand_pile* sand)
@@ -456,14 +473,14 @@ extern "C" SAND_API long long sand_relax(sand_pile* sand)
     return sand->relax();
 }
 
-extern "C" SAND_API long long sand_relax_grid(int* heights, int size, int theta)
+extern "C" SAND_API long long sand_relax_grid(int* heights, int width, int height, int theta)
 {
-    if (heights == nullptr || size <= 0 || theta < 0)
+    if (heights == nullptr || width <= 0 || height <= 0 || theta < 0)
     {
         return SAND_ERR_INVALID_ARGUMENT;
     }
 
-    const std::size_t cell_count = static_cast<std::size_t>(size) * size;
+    const std::size_t cell_count = static_cast<std::size_t>(width) * height;
     for (std::size_t i = 0; i < cell_count; ++i)
     {
         if (heights[i] < 0)
@@ -474,7 +491,7 @@ extern "C" SAND_API long long sand_relax_grid(int* heights, int size, int theta)
 
     try
     {
-        sand_pile pile(size, theta);
+        sand_pile pile(width, height, theta);
         if (!pile.load_heights(heights, cell_count))
         {
             return SAND_ERR_INVALID_ARGUMENT;
@@ -504,15 +521,15 @@ extern "C" SAND_API long long sand_update(sand_pile* sand, int row, int col)
     return sand->update(row, col);
 }
 
-extern "C" SAND_API long long sand_update_grid(int* heights, int size, int theta, int row, int col)
+extern "C" SAND_API long long sand_update_grid(int* heights, int width, int height, int theta, int row, int col)
 {
-    if (heights == nullptr || size <= 0 || theta < 0 ||
-        !in_bounds(size, row, col))
+    if (heights == nullptr || width <= 0 || height <= 0 || theta < 0 ||
+        !in_bounds(width, height, row, col))
     {
         return SAND_ERR_INVALID_ARGUMENT;
     }
 
-    const std::size_t cell_count = static_cast<std::size_t>(size) * size;
+    const std::size_t cell_count = static_cast<std::size_t>(width) * height;
     for (std::size_t i = 0; i < cell_count; ++i)
     {
         if (heights[i] < 0)
@@ -523,7 +540,7 @@ extern "C" SAND_API long long sand_update_grid(int* heights, int size, int theta
 
     try
     {
-        sand_pile pile(size, theta);
+        sand_pile pile(width, height, theta);
         if (!pile.load_heights(heights, cell_count))
         {
             return SAND_ERR_INVALID_ARGUMENT;
@@ -557,12 +574,12 @@ extern "C" SAND_API long long sand_update_height(sand_pile* sand, int row, int c
     return sand_update(sand, row, col);
 }
 
-extern "C" SAND_API long long update_sand_height(int* heights, int size, int theta, int row, int col)
+extern "C" SAND_API long long update_sand_height(int* heights, int width, int height, int theta, int row, int col)
 {
-    return sand_update_grid(heights, size, theta, row, col);
+    return sand_update_grid(heights, width, height, theta, row, col);
 }
 
-extern "C" SAND_API long long update_height(int* heights, int size, int theta, int row, int col)
+extern "C" SAND_API long long update_height(int* heights, int width, int height, int theta, int row, int col)
 {
-    return sand_update_grid(heights, size, theta, row, col);
+    return sand_update_grid(heights, width, height, theta, row, col);
 }
