@@ -1,6 +1,14 @@
 ﻿#include "pch.h"
 #include "sand.h"
 
+using std::size_t;
+using std::vector;
+using std::array;
+using std::fill;
+using std::copy;
+using std::min_element;
+using std::bad_alloc;
+
 namespace
 {
     // 四个冯·诺依曼方向。
@@ -42,23 +50,23 @@ public:
     long long relax();
     long long update(int row, int col);
 
-    bool load_heights(const int* values, std::size_t count);
+    bool load_heights(const int* values, size_t count);
     void store_heights(int* values) const;
 
 private:
     bool in_bounds(int row, int col) const;
-    std::size_t cell_index(int row, int col) const;
+    size_t cell_index(int row, int col) const;
     bool unstable_at(int row, int col) const;
-    std::array<long long, kDirectionCount> collapse_plan(int row, int col) const;
+    array<long long, kDirectionCount> collapse_plan(int row, int col) const;
 
     int width_;
     int height_;
     int theta_;
-    std::vector<int> heights_;
+    vector<int> heights_;
 };
 
 sand_pile::sand_pile(int width, int height, int theta):
-    width_(width), height_(height), theta_(theta), heights_(static_cast<std::size_t>(width) * height, 0)
+    width_(width), height_(height), theta_(theta), heights_(static_cast<size_t>(width) * height, 0)
 {
 }
 
@@ -90,7 +98,7 @@ bool sand_pile::set_theta(int theta)
 
 void sand_pile::reset()
 {
-    std::fill(heights_.begin(), heights_.end(), 0);
+    fill(heights_.begin(), heights_.end(), 0);
 }
 
 bool sand_pile::in_bounds(int row, int col) const
@@ -98,10 +106,10 @@ bool sand_pile::in_bounds(int row, int col) const
     return row >= 0 && row < height_ && col >= 0 && col < width_;
 }
 
-std::size_t sand_pile::cell_index(int row, int col) const
+size_t sand_pile::cell_index(int row, int col) const
 {
-    return static_cast<std::size_t>(row) * static_cast<std::size_t>(width_) +
-           static_cast<std::size_t>(col);
+    return static_cast<size_t>(row) * static_cast<size_t>(width_) +
+           static_cast<size_t>(col);
 }
 
 int sand_pile::get_height(int row, int col) const
@@ -125,7 +133,7 @@ bool sand_pile::set_height(int row, int col, int height)
     return true;
 }
 
-bool sand_pile::load_heights(const int* values, std::size_t count)
+bool sand_pile::load_heights(const int* values, size_t count)
 {
     if (values == nullptr || count != heights_.size())
     {
@@ -138,7 +146,7 @@ bool sand_pile::load_heights(const int* values, std::size_t count)
 
 void sand_pile::store_heights(int* values) const
 {
-    std::copy(heights_.begin(), heights_.end(), values);
+    copy(heights_.begin(), heights_.end(), values);
 }
 
 // README 第 3 节：存在邻居 n，使 h(c) - h(n) > theta 时不稳。
@@ -146,11 +154,11 @@ void sand_pile::store_heights(int* values) const
 bool sand_pile::unstable_at(int row, int col) const
 {
     const auto& h = heights_;
-    const std::size_t idx = cell_index(row, col);
+    const size_t idx = cell_index(row, col);
     const int value = h[idx];
 
-    const int up = row > 0 ? h[idx - static_cast<std::size_t>(width_)] : 0;
-    const int down = row + 1 < height_ ? h[idx + static_cast<std::size_t>(width_)] : 0;
+    const int up = row > 0 ? h[idx - static_cast<size_t>(width_)] : 0;
+    const int down = row + 1 < height_ ? h[idx + static_cast<size_t>(width_)] : 0;
     const int left = col > 0 ? h[idx - 1] : 0;
     const int right = col + 1 < width_ ? h[idx + 1] : 0;
 
@@ -179,17 +187,17 @@ bool sand_pile::is_stable() const
 // 对旧快照上的一个不稳定格，重复向所有并列最低方向各发一粒沙；
 // 内部邻居的“水位”随之 +1，越界方向保持 0 且永远不升高。
 // 剩余沙粒不足一组时，按旋转后的确定性方向顺序逐粒发出。
-std::array<long long, kDirectionCount> sand_pile::collapse_plan(int row, int col) const
+array<long long, kDirectionCount> sand_pile::collapse_plan(int row, int col) const
 {
     const auto& h = heights_;
-    const std::size_t idx = cell_index(row, col);
+    const size_t idx = cell_index(row, col);
 
-    std::array<long long, kDirectionCount> levels{};
-    std::array<bool, kDirectionCount> inside{};
+    array<long long, kDirectionCount> levels{};
+    array<bool, kDirectionCount> inside{};
 
     if (row > 0)
     {
-        levels[kUp] = h[idx - static_cast<std::size_t>(width_)];
+        levels[kUp] = h[idx - static_cast<size_t>(width_)];
         inside[kUp] = true;
     }
     if (col + 1 < width_)
@@ -199,7 +207,7 @@ std::array<long long, kDirectionCount> sand_pile::collapse_plan(int row, int col
     }
     if (row + 1 < height_)
     {
-        levels[kDown] = h[idx + static_cast<std::size_t>(width_)];
+        levels[kDown] = h[idx + static_cast<size_t>(width_)];
         inside[kDown] = true;
     }
     if (col > 0)
@@ -209,11 +217,11 @@ std::array<long long, kDirectionCount> sand_pile::collapse_plan(int row, int col
     }
 
     long long height = h[idx];
-    std::array<long long, kDirectionCount> alloc{};
+    array<long long, kDirectionCount> alloc{};
 
-    while (height - *std::min_element(levels.begin(), levels.end()) > theta_)
+    while (height - *min_element(levels.begin(), levels.end()) > theta_)
     {
-        const long long min_level = *std::min_element(levels.begin(), levels.end());
+        const long long min_level = *min_element(levels.begin(), levels.end());
 
         int min_directions[kDirectionCount];
         int group_size = 0;
@@ -269,10 +277,10 @@ std::array<long long, kDirectionCount> sand_pile::collapse_plan(int row, int col
 // README 第 5 节：完全同步松弛。返回本次松弛移动的沙粒总数。
 long long sand_pile::relax()
 {
-    const std::size_t cell_count = heights_.size();
+    const size_t cell_count = heights_.size();
     long long avalanche_size = 0;
-    std::vector<long long> delta(cell_count);
-    std::vector<std::size_t> unstable_cells;
+    vector<long long> delta(cell_count);
+    vector<size_t> unstable_cells;
 
     while (true)
     {
@@ -293,13 +301,13 @@ long long sand_pile::relax()
             break;
         }
 
-        std::fill(delta.begin(), delta.end(), 0);
+        fill(delta.begin(), delta.end(), 0);
 
         // 所有计划都基于本轮开始时的同一份旧快照 heights_。
-        for (const std::size_t idx : unstable_cells)
+        for (const size_t idx : unstable_cells)
         {
-            const int row = static_cast<int>(idx / static_cast<std::size_t>(width_));
-            const int col = static_cast<int>(idx % static_cast<std::size_t>(width_));
+            const int row = static_cast<int>(idx / static_cast<size_t>(width_));
+            const int col = static_cast<int>(idx % static_cast<size_t>(width_));
             const auto alloc = collapse_plan(row, col);
 
             long long sent = 0;
@@ -313,7 +321,7 @@ long long sand_pile::relax()
 
             if (row > 0)
             {
-                delta[idx - static_cast<std::size_t>(width_)] += alloc[kUp];
+                delta[idx - static_cast<size_t>(width_)] += alloc[kUp];
             }
             if (col + 1 < width_)
             {
@@ -321,7 +329,7 @@ long long sand_pile::relax()
             }
             if (row + 1 < height_)
             {
-                delta[idx + static_cast<std::size_t>(width_)] += alloc[kDown];
+                delta[idx + static_cast<size_t>(width_)] += alloc[kDown];
             }
             if (col > 0)
             {
@@ -330,7 +338,7 @@ long long sand_pile::relax()
         }
 
         // 统一提交本轮所有变化。
-        for (std::size_t i = 0; i < cell_count; ++i)
+        for (size_t i = 0; i < cell_count; ++i)
         {
             heights_[i] += static_cast<int>(delta[i]);
         }
@@ -367,7 +375,7 @@ extern "C" SAND_API sand_pile* sand_create(int width, int height, int theta)
     {
         return new sand_pile(width, height, theta);
     }
-    catch (const std::bad_alloc&)
+    catch (const bad_alloc&)
     {
         return nullptr;
     }
@@ -480,8 +488,8 @@ extern "C" SAND_API long long sand_relax_grid(int* heights, int width, int heigh
         return SAND_ERR_INVALID_ARGUMENT;
     }
 
-    const std::size_t cell_count = static_cast<std::size_t>(width) * height;
-    for (std::size_t i = 0; i < cell_count; ++i)
+    const size_t cell_count = static_cast<size_t>(width) * height;
+    for (size_t i = 0; i < cell_count; ++i)
     {
         if (heights[i] < 0)
         {
@@ -501,7 +509,7 @@ extern "C" SAND_API long long sand_relax_grid(int* heights, int width, int heigh
         pile.store_heights(heights);
         return avalanche_size;
     }
-    catch (const std::bad_alloc&)
+    catch (const bad_alloc&)
     {
         return SAND_ERR_INVALID_ARGUMENT;
     }
@@ -529,8 +537,8 @@ extern "C" SAND_API long long sand_update_grid(int* heights, int width, int heig
         return SAND_ERR_INVALID_ARGUMENT;
     }
 
-    const std::size_t cell_count = static_cast<std::size_t>(width) * height;
-    for (std::size_t i = 0; i < cell_count; ++i)
+    const size_t cell_count = static_cast<size_t>(width) * height;
+    for (size_t i = 0; i < cell_count; ++i)
     {
         if (heights[i] < 0)
         {
@@ -554,7 +562,7 @@ extern "C" SAND_API long long sand_update_grid(int* heights, int width, int heig
 
         return result;
     }
-    catch (const std::bad_alloc&)
+    catch (const bad_alloc&)
     {
         return SAND_ERR_INVALID_ARGUMENT;
     }
